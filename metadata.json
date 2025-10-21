@@ -1,0 +1,5 @@
+{
+  "name": "AI Resume Tailoring Engine",
+  "description": "A web application where a job seeker can paste their resume and a job description to generate a new, optimized version of their resume. The app also provides a match score to indicate how well the new resume aligns with the job description.",
+  "requestFramePermissions": []
+}
