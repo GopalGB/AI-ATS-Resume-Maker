@@ -46,3 +46,22 @@ export interface TailoredResumeResponse {
   feedback: string;
   suggested_improvements: string[];
 }
+
+// --- New types for ATS Friendliness Check ---
+
+export interface ParsedAtsData {
+    name?: string;
+    email?: string;
+    phone?: string;
+    experience?: { job_title: string; company: string; dates: string; }[];
+    skills?: string[];
+    education?: { degree: string; university: string, graduation_date: string }[]
+}
+
+export interface AtsCheckResponse {
+    ats_score: number;
+    summary: string;
+    strengths: string[];
+    improvements: string[];
+    parsed_data_summary: string;
+}
