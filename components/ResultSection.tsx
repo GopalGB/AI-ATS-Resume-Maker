@@ -2,8 +2,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import ScoreCircle from './ScoreCircle';
 import AtsResultDisplay from './AtsResultDisplay';
-import KeywordHighlighter from './KeywordHighlighter';
-import { TailoredResumeResponse, AtsCheckResponse, StructuredResume } from '../types';
+import ResumeTextDisplay from './ResumeTextDisplay';
+import ProgressTracker from './ProgressTracker';
+import { TailoredResumeResponse, AtsCheckResponse } from '../types';
 import { generatePdf } from '../utils/pdfGenerator';
 
 // PDF Viewer Component, now co-located for simplicity
@@ -56,6 +57,30 @@ const PdfViewer: React.FC<{ pdfUrl: string | null; title: string }> = ({ pdfUrl,
   return <canvas ref={canvasRef} title={title} className="max-w-full max-h-full object-contain" />;
 };
 
+const TailoredResultSkeleton = () => (
+    <div className="space-y-8 mt-8 border-t border-base-300/50 pt-8 animate-pulse">
+        <div className="flex justify-center gap-8 md:gap-12">
+            <div className="flex flex-col items-center gap-2">
+                <div className="w-40 h-40 bg-base-300 rounded-full"></div>
+                <div className="h-4 bg-base-300 rounded-md w-24"></div>
+            </div>
+            <div className="w-12 h-12 bg-base-300 rounded-full self-center hidden sm:block"></div>
+            <div className="flex flex-col items-center gap-2">
+                <div className="w-40 h-40 bg-base-300 rounded-full"></div>
+                <div className="h-4 bg-base-300 rounded-md w-24"></div>
+            </div>
+        </div>
+        <div className="space-y-4">
+            <div className="h-8 bg-base-300 rounded-md w-1/3"></div>
+            <div className="h-96 bg-base-300 rounded-lg"></div>
+        </div>
+        <div className="space-y-4">
+            <div className="h-8 bg-base-300 rounded-md w-1/3"></div>
+            <div className="h-48 bg-base-300 rounded-lg"></div>
+        </div>
+    </div>
+);
+
 
 const STOP_WORDS = new Set(['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now']);
 
@@ -73,6 +98,7 @@ const extractKeywords = (text: string): string[] => {
 
 interface ResultSectionProps {
   isLoading: boolean;
+  loadingStatus: string;
   error: string | null;
   result: TailoredResumeResponse | null;
   atsResult: AtsCheckResponse | null;
@@ -81,6 +107,7 @@ interface ResultSectionProps {
 
 const ResultSection: React.FC<ResultSectionProps> = ({ 
   isLoading, 
+  loadingStatus,
   error, 
   result, 
   atsResult,
@@ -99,7 +126,6 @@ const ResultSection: React.FC<ResultSectionProps> = ({
     setIsPreviewLoading(true);
     let objectUrl: string | null = null;
 
-    // Generate PDF in a non-blocking way to prevent UI freeze
     const timer = setTimeout(() => {
         try {
             const tailoredBlob = generatePdf(result.tailored_resume_structured, 'blob') as Blob;
@@ -121,32 +147,50 @@ const ResultSection: React.FC<ResultSectionProps> = ({
     };
   }, [result]);
 
+  const feedbackParts = useMemo(() => {
+    if (!result?.feedback) return { researchContent: '', strategicContent: '' };
+    
+    const feedbackText = result.feedback;
+    const strategicChoicesMarker = '### Strategic Choices';
+    const researchInsightsMarker = '### Research Insights';
+
+    let researchContent = '';
+    let strategicContent = '';
+
+    const strategicChoicesIndex = feedbackText.indexOf(strategicChoicesMarker);
+    const researchStartIndex = feedbackText.indexOf(researchInsightsMarker);
+    
+    if (strategicChoicesIndex > -1 && researchStartIndex > -1) {
+        if (researchStartIndex < strategicChoicesIndex) {
+            researchContent = feedbackText.substring(researchStartIndex + researchInsightsMarker.length, strategicChoicesIndex).trim();
+            strategicContent = feedbackText.substring(strategicChoicesIndex + strategicChoicesMarker.length).trim();
+        } else {
+            strategicContent = feedbackText.substring(strategicChoicesIndex + strategicChoicesMarker.length, researchStartIndex).trim();
+            researchContent = feedbackText.substring(researchStartIndex + researchInsightsMarker.length).trim();
+        }
+    } else if (strategicChoicesIndex > -1) {
+        researchContent = feedbackText.substring(0, strategicChoicesIndex).trim();
+        if (researchContent.startsWith(researchInsightsMarker)) {
+             researchContent = researchContent.substring(researchInsightsMarker.length).trim();
+        }
+        strategicContent = feedbackText.substring(strategicChoicesIndex + strategicChoicesMarker.length).trim();
+    } else if (researchStartIndex > -1) {
+        researchContent = feedbackText.substring(researchStartIndex + researchInsightsMarker.length).trim();
+    } else {
+        strategicContent = feedbackText.trim();
+    }
+
+    return { researchContent, strategicContent };
+
+  }, [result?.feedback]);
+
+
   const handleDownload = () => {
     if (result) {
         generatePdf(result.tailored_resume_structured, 'download');
     }
   };
 
-
-  if (isLoading && !atsResult) {
-    return (
-      <div className="animate-pulse space-y-8">
-         <div className="space-y-4 p-4 border border-base-300/50 rounded-lg">
-            <div className="h-8 bg-base-300 rounded-md w-1/3"></div>
-            <div className="h-4 bg-base-300 rounded-md w-full"></div>
-            <div className="h-4 bg-base-300 rounded-md w-2/3"></div>
-        </div>
-        <div className="flex justify-center gap-8">
-          <div className="w-40 h-40 bg-base-300 rounded-full"></div>
-          <div className="w-40 h-40 bg-base-300 rounded-full"></div>
-        </div>
-        <div className="space-y-4">
-          <div className="h-8 bg-base-300 rounded-md w-1/3 mx-auto"></div>
-          <div className="h-48 bg-base-300 rounded-lg"></div>
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -157,7 +201,7 @@ const ResultSection: React.FC<ResultSectionProps> = ({
     );
   }
 
-  if (!result && !atsResult) {
+  if (!isLoading && !atsResult) {
     return (
       <div className="text-center text-text-secondary py-12">
         <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
@@ -169,15 +213,19 @@ const ResultSection: React.FC<ResultSectionProps> = ({
   }
 
   return (
-    <>
-      <div className="bg-base-200/50 border border-base-300/50 rounded-2xl shadow-xl p-6 sm:p-8 space-y-8 animate-fade-in">
+    <div className="bg-base-200/50 border border-base-300/50 rounded-2xl shadow-xl p-6 sm:p-8 space-y-8 animate-fade-in">
+        {isLoading && <ProgressTracker loadingStatus={loadingStatus} />}
         
-        <AtsResultDisplay 
-          isLoading={isLoading && !atsResult}
-          result={atsResult}
-          error={null} // Global error is handled above
-        />
-
+        {atsResult && (
+            <AtsResultDisplay 
+              isLoading={false}
+              result={atsResult}
+              error={null}
+            />
+        )}
+        
+        {isLoading && atsResult && !result && <TailoredResultSkeleton />}
+        
         {result && (
           <div className="space-y-8 mt-8 border-t border-base-300/50 pt-8">
               <div className="flex flex-col items-center">
@@ -229,16 +277,44 @@ const ResultSection: React.FC<ResultSectionProps> = ({
                   <div>
                   <h3 className="text-2xl font-semibold text-text-primary mb-4">Tailored Resume Text</h3>
                   <div className="max-w-none p-4 bg-base-100 border border-base-300 rounded-lg shadow-inner text-text-secondary">
-                      <KeywordHighlighter text={result.tailored_resume_text} keywords={keywords} />
+                      <ResumeTextDisplay text={result.tailored_resume_text} keywords={keywords} />
                   </div>
                   </div>
 
                   <div>
-                  <h3 className="text-2xl font-semibold text-text-primary mb-4">Feedback & Insights</h3>
-                  <div className="p-4 bg-base-100 border border-base-300 rounded-lg shadow-inner text-text-secondary">
-                      {/* Using KeywordHighlighter to format the headings inside the feedback */}
-                       <KeywordHighlighter text={result.feedback} keywords={['### Research Insights', '### Strategic Choices']} />
-                  </div>
+                    <h3 className="text-2xl font-semibold text-text-primary mb-4">Feedback & Insights</h3>
+                    <div className="p-4 bg-base-100 border border-base-300 rounded-lg shadow-inner text-text-secondary space-y-6">
+                        
+                        {feedbackParts?.researchContent && (
+                            <div>
+                                <h4 className="text-lg font-bold text-brand-primary mb-3 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                        <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                                    </svg>
+                                    Research Insights
+                                </h4>
+                                <div className="p-4 bg-base-200/50 rounded-md text-text-secondary/90 border border-base-300/50">
+                                    <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{feedbackParts.researchContent}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {feedbackParts?.strategicContent && (
+                            <div>
+                                <h4 className="text-lg font-bold text-brand-secondary mb-3 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                    </svg>
+                                    Strategic Choices
+                                </h4>
+                                <div className="text-text-secondary">
+                                    <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{feedbackParts.strategicContent}</p>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                   </div>
 
                   <div>
@@ -253,7 +329,6 @@ const ResultSection: React.FC<ResultSectionProps> = ({
           </div>
         )}
       </div>
-    </>
   );
 };
 

@@ -111,7 +111,8 @@ const App: React.FC = () => {
           {/* --- Right Column: Results --- */}
           <div className="lg:sticky lg:top-8 self-start">
             <ResultSection 
-              isLoading={isLoading} 
+              isLoading={isLoading}
+              loadingStatus={loadingStatus}
               error={error} 
               result={result}
               atsResult={atsResult}
