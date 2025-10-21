@@ -42,6 +42,7 @@ export interface TailoredResumeResponse {
   original_score: number;
   tailored_score: number;
   tailored_resume_text: string;
+  original_resume_structured: StructuredResume;
   tailored_resume_structured: StructuredResume;
   feedback: string;
   suggested_improvements: string[];

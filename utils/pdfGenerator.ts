@@ -2,7 +2,7 @@
 import { jsPDF } from 'jspdf';
 import { StructuredResume } from '../types';
 
-export const generatePdf = (resume: StructuredResume) => {
+export const generatePdf = (resume: StructuredResume, outputType: 'download' | 'dataurl' | 'blob' = 'download'): string | Blob | void => {
     const doc = new jsPDF({
         unit: 'pt',
         format: 'a4'
@@ -342,5 +342,16 @@ export const generatePdf = (resume: StructuredResume) => {
         }
     });
 
-    doc.save('Tailored-Resume.pdf');
+    if (outputType === 'download') {
+        doc.save('Tailored-Resume.pdf');
+        return;
+    }
+
+    if (outputType === 'dataurl') {
+        return doc.output('datauristring');
+    }
+    
+    if (outputType === 'blob') {
+        return doc.output('blob');
+    }
 };

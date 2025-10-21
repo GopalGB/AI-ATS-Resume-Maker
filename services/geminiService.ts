@@ -4,95 +4,98 @@ import { TailoredResumeResponse, AtsCheckResponse } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+const structuredResumeSchema = {
+    type: Type.OBJECT,
+    description: "The resume in a structured format.",
+    properties: {
+        name: { type: Type.STRING },
+        contact: {
+            type: Type.OBJECT,
+            properties: {
+                email: { type: Type.STRING },
+                phone: { type: Type.STRING },
+                linkedin: { type: Type.STRING, description: "LinkedIn profile URL (optional)." },
+                github: { type: Type.STRING, description: "GitHub profile URL (optional)." },
+                portfolio: { type: Type.STRING, description: "Portfolio URL (optional)." },
+            },
+            required: ["email", "phone"]
+        },
+        summary: { type: Type.STRING, description: "A professional summary tailored to the job." },
+        experience: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    job_title: { type: Type.STRING },
+                    company: { type: Type.STRING },
+                    location: { type: Type.STRING },
+                    start_date: { type: Type.STRING },
+                    end_date: { type: Type.STRING },
+                    responsibilities: { type: Type.ARRAY, items: { type: Type.STRING } }
+                },
+                required: ["job_title", "company", "location", "start_date", "end_date", "responsibilities"]
+            }
+        },
+        projects: {
+            type: Type.ARRAY,
+            description: "An array of 2-3 projects most relevant to the job description.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    name: { type: Type.STRING },
+                    description: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Bulleted list of responsibilities or achievements." },
+                    technologies: { type: Type.STRING, description: "Comma-separated list of technologies used." },
+                    link: { type: Type.STRING, description: "A URL for the project (e.g., GitHub, live demo), if available." }
+                },
+                    required: ["name", "description"]
+            }
+        },
+        education: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    degree: { type: Type.STRING },
+                    university: { type: Type.STRING },
+                    location: { type: Type.STRING },
+                    graduation_date: { type: Type.STRING }
+                },
+                required: ["degree", "university", "graduation_date"]
+            }
+        },
+        skills: { 
+            type: Type.ARRAY,
+            description: "Skills grouped by category.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                category: { type: Type.STRING, description: "e.g., Programming, Databases, Tools" },
+                items: { type: Type.ARRAY, items: { type: Type.STRING } }
+                },
+                required: ["category", "items"]
+            }
+            }
+    },
+    required: ["name", "contact", "summary", "experience", "education", "skills"]
+};
+
 const responseSchema = {
     type: Type.OBJECT,
     properties: {
         original_score: { type: Type.NUMBER, description: "The match score of the original resume from 0 to 100." },
         tailored_score: { type: Type.NUMBER, description: "The match score of the tailored resume from 0 to 100." },
         tailored_resume_text: { type: Type.STRING, description: "The full tailored resume as a single string of text, formatted for readability." },
-        tailored_resume_structured: {
-            type: Type.OBJECT,
-            description: "The tailored resume in a structured format.",
-            properties: {
-                name: { type: Type.STRING },
-                contact: {
-                    type: Type.OBJECT,
-                    properties: {
-                        email: { type: Type.STRING },
-                        phone: { type: Type.STRING },
-                        linkedin: { type: Type.STRING, description: "LinkedIn profile URL (optional)." },
-                        github: { type: Type.STRING, description: "GitHub profile URL (optional)." },
-                        portfolio: { type: Type.STRING, description: "Portfolio URL (optional)." },
-                    },
-                    required: ["email", "phone"]
-                },
-                summary: { type: Type.STRING, description: "A professional summary tailored to the job." },
-                experience: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            job_title: { type: Type.STRING },
-                            company: { type: Type.STRING },
-                            location: { type: Type.STRING },
-                            start_date: { type: Type.STRING },
-                            end_date: { type: Type.STRING },
-                            responsibilities: { type: Type.ARRAY, items: { type: Type.STRING } }
-                        },
-                        required: ["job_title", "company", "location", "start_date", "end_date", "responsibilities"]
-                    }
-                },
-                projects: {
-                    type: Type.ARRAY,
-                    description: "An array of 2-3 projects most relevant to the job description.",
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            name: { type: Type.STRING },
-                            description: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Bulleted list of responsibilities or achievements." },
-                            technologies: { type: Type.STRING, description: "Comma-separated list of technologies used." },
-                            link: { type: Type.STRING, description: "A URL for the project (e.g., GitHub, live demo), if available." }
-                        },
-                         required: ["name", "description"]
-                    }
-                },
-                education: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            degree: { type: Type.STRING },
-                            university: { type: Type.STRING },
-                            location: { type: Type.STRING },
-                            graduation_date: { type: Type.STRING }
-                        },
-                        required: ["degree", "university", "graduation_date"]
-                    }
-                },
-                skills: { 
-                    type: Type.ARRAY,
-                    description: "Skills grouped by category.",
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        category: { type: Type.STRING, description: "e.g., Programming, Databases, Tools" },
-                        items: { type: Type.ARRAY, items: { type: Type.STRING } }
-                      },
-                      required: ["category", "items"]
-                    }
-                 }
-            },
-            required: ["name", "contact", "summary", "experience", "education", "skills"]
-        },
+        original_resume_structured: structuredResumeSchema,
+        tailored_resume_structured: structuredResumeSchema,
         feedback: { type: Type.STRING, description: "Constructive feedback on the original resume and the changes made." },
         suggested_improvements: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A list of actionable suggestions for further improvement." }
     },
-    required: ["original_score", "tailored_score", "tailored_resume_text", "tailored_resume_structured", "feedback", "suggested_improvements"]
+    required: ["original_score", "tailored_score", "tailored_resume_text", "original_resume_structured", "tailored_resume_structured", "feedback", "suggested_improvements"]
 };
 
-export const tailorResumeAndScore = async (resumeText: string, jobDescriptionText: string, atsImprovements: string[]): Promise<TailoredResumeResponse> => {
+export const tailorResumeAndScore = async (resumeText: string, jobDescriptionText: string, atsImprovements: string[], researchFindings: string): Promise<TailoredResumeResponse> => {
     const prompt = `
-You are an expert AI resume curator and career coach for a top-tier recruiting firm. Your standards are exceptionally high. Your task is to analyze a candidate's master resume, incorporate critical ATS feedback, and strategically tailor it for a specific job description.
+You are an expert AI resume curator and career coach for a top-tier recruiting firm. Your standards are exceptionally high. Your task is to analyze a candidate's master resume, incorporate critical ATS and research feedback, and strategically tailor it for a specific job description.
 
 **Candidate's Master Resume (may include many projects):**
 ---
@@ -110,16 +113,23 @@ The original resume was analyzed by an ATS parser, which identified the followin
 ${atsImprovements.map(item => `- ${item}`).join('\n')}
 ---
 
+**STRATEGIC RESEARCH FINDINGS (MUST INCORPORATE):**
+Based on external research, the following insights about the company and role were found. You MUST weave these themes and keywords into the tailored resume to show the candidate has done their homework.
+---
+${researchFindings}
+---
+
 **CRITICAL TAILORING INSTRUCTIONS:**
-1.  **ADDRESS ATS FEEDBACK:** Your #1 priority is to resolve all the ATS feedback provided above. This includes fixing formatting, adding missing keywords, and ensuring standard section headers.
+0.  **PARSE THE ORIGINAL:** Before you do anything else, parse the \`Candidate's Master Resume\` into the exact same structured JSON format required for the final tailored resume. This is for a side-by-side comparison view and is non-negotiable.
+1.  **ADDRESS ATS & RESEARCH:** Your #1 priority is to resolve all the ATS feedback AND incorporate the strategic research findings. This means aligning the resume's tone with the company's culture and including the strategic keywords found during research.
 2.  **SCORE THE ORIGINAL:** First, score the raw, untailored master resume against the job description from 0-100.
 3.  **CURATE, DON'T JUST REWRITE:**
     *   **PROJECT SELECTION:** From the master resume, you MUST select only the 2-3 most relevant and impactful projects that directly align with the job description. If a project has a URL (like a GitHub link), you MUST extract and include it.
     *   **CONCISENESS (ONE PAGE):** The final resume MUST be concise enough to fit on a single page. Remove or condense less relevant bullet points from work experience to achieve this. Prioritize impact over volume.
-4.  **TAILOR THE CONTENT:** Rewrite the summary, experience bullet points, and skills to perfectly align with the job's language. Use strong action verbs and quantify achievements.
+4.  **TAILOR THE CONTENT:** Rewrite the summary, experience bullet points, and skills to perfectly align with the job's language and the research findings. Use strong action verbs and quantify achievements.
 5.  **CATEGORIZE SKILLS:** Group the skills into logical categories (e.g., 'Programming', 'Databases', 'Cloud Technologies', 'BI Tools').
 6.  **SCORE YOUR WORK:** After tailoring, provide a new, improved score for your curated version.
-7.  **PROVIDE EXPERT FEEDBACK:** Briefly explain your strategic choices, including how you addressed the ATS feedback.
+7.  **PROVIDE EXPERT FEEDBACK:** Your feedback must begin with the heading "### Research Insights" followed by the full, unaltered text from the 'STRATEGIC RESEARCH FINDINGS' section. After that, add a new heading "### Strategic Choices" and then briefly explain your strategic choices, including how you addressed the ATS feedback and incorporated the research.
 8.  **OFFER ACTIONABLE ADVICE:** Give 3-5 concrete suggestions for the candidate to improve their overall profile for this career path.
 
 Produce the final output in the specified JSON format. Failure to follow these rules will result in a rejected application.
@@ -149,7 +159,7 @@ Produce the final output in the specified JSON format. Failure to follow these r
             throw new Error("The AI returned a response that could not be understood. Please try again.");
         }
 
-        if (!result.tailored_resume_structured || !result.tailored_score) {
+        if (!result.tailored_resume_structured || !result.tailored_score || !result.original_resume_structured) {
             console.error("Invalid data structure in AI response:", result);
             throw new Error("The AI response was missing critical information. Please try again.");
         }
@@ -240,4 +250,55 @@ Provide your analysis in the specified JSON format. Your evaluation must be obje
         }
         throw new Error("An unknown error occurred during the ATS friendliness check.");
     }
-}
+};
+
+export const researchCompanyAndRole = async (jobDescriptionText: string): Promise<string> => {
+    const prompt = `
+Based on the provided job description, act as a senior career researcher. Use Google Search to find critical information about the company and the specific role. Focus on details that would give a candidate an edge when tailoring their resume.
+
+**Job Description:**
+---
+${jobDescriptionText}
+---
+
+**Research Task:**
+1.  **Company Overview:** Find the company's mission, core values, or recent significant news (e.g., product launches, acquisitions). Synthesize this into a 2-3 sentence summary.
+2.  **Role Insights:** Identify key insights about the role that may not be explicitly stated, such as the underlying technologies, team culture, or project goals. Summarize in 2-3 sentences.
+3.  **Strategic Keywords:** List 3-5 strategic keywords or concepts found during your research that are highly relevant but might be missing from the job description.
+
+**Output Format:**
+Provide the output as a single block of text. Use the following format strictly:
+
+COMPANY OVERVIEW:
+[Your 2-3 sentence summary here]
+
+ROLE INSIGHTS:
+[Your 2-3 sentence summary here]
+
+STRATEGIC KEYWORDS:
+[keyword1, keyword2, keyword3, keyword4, keyword5]
+`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                tools: [{ googleSearch: {} }],
+            },
+        });
+
+        const responseText = response.text?.trim();
+        if (!responseText) {
+            throw new Error("The company research returned an empty response.");
+        }
+        return responseText;
+
+    } catch (error) {
+        console.error("Error during company research:", error);
+        if (error instanceof Error) {
+            throw new Error(error.message || "An error occurred during company and role research.");
+        }
+        throw new Error("An unknown error occurred during company and role research.");
+    }
+};

@@ -3,7 +3,7 @@ import Header from './components/Header';
 import TextAreaInput from './components/TextAreaInput';
 import ResumeInput from './components/ResumeInput';
 import ResultSection from './components/ResultSection';
-import { tailorResumeAndScore, checkAtsFriendliness } from './services/geminiService';
+import { tailorResumeAndScore, checkAtsFriendliness, researchCompanyAndRole } from './services/geminiService';
 import { TailoredResumeResponse, AtsCheckResponse } from './types';
 
 const App: React.FC = () => {
@@ -28,15 +28,22 @@ const App: React.FC = () => {
     setAtsResult(null);
 
     try {
+      // Step 1: ATS Check
       setLoadingStatus('Analyzing for ATS Friendliness...');
       const atsCheckResult = await checkAtsFriendliness(resumeText, jobDescriptionText);
       setAtsResult(atsCheckResult);
 
-      setLoadingStatus('Tailoring with ATS Feedback...');
+      // Step 2: Research Company and Role
+      setLoadingStatus('Researching company and role...');
+      const researchFindings = await researchCompanyAndRole(jobDescriptionText);
+
+      // Step 3: Tailor with all available info
+      setLoadingStatus('Tailoring with research & ATS feedback...');
       const tailoredResult = await tailorResumeAndScore(
         resumeText, 
         jobDescriptionText, 
-        atsCheckResult.improvements
+        atsCheckResult.improvements,
+        researchFindings
       );
       setResult(tailoredResult);
 
@@ -108,6 +115,7 @@ const App: React.FC = () => {
               error={error} 
               result={result}
               atsResult={atsResult}
+              jobDescriptionText={jobDescriptionText}
             />
           </div>
         </main>
