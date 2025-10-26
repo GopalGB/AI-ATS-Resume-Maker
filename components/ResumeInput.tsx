@@ -41,42 +41,50 @@ const ResumeInput: React.FC<{
         try {
             const reader = new FileReader();
             reader.onload = async (e) => {
-                if (!e.target?.result) {
-                    setParseError('Could not read file.');
-                    setIsParsing(false);
-                    return;
-                }
-                const typedArray = new Uint8Array(e.target.result as ArrayBuffer);
-                const loadingTask = window.pdfjsLib.getDocument(typedArray);
+                try {
+                    if (!e.target?.result) {
+                        setParseError('Could not read file.');
+                        setIsParsing(false);
+                        return;
+                    }
+                    const typedArray = new Uint8Array(e.target.result as ArrayBuffer);
+                    const loadingTask = window.pdfjsLib.getDocument(typedArray);
 
-                const pdf = await loadingTask.promise;
-                
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map((item: any) => item.str).join(' ');
-                    fullText += pageText + '\n\n';
+                    const pdf = await loadingTask.promise;
+
+                    let fullText = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                        fullText += pageText + '\n\n';
+                    }
+                    onChange(fullText.trim());
+                    setIsParsing(false);
+                } catch (pdfError) {
+                    setParseError('Failed to parse PDF file. It might be corrupted or protected.');
+                    console.error('PDF parsing error:', pdfError);
+                    setIsParsing(false);
+                } finally {
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
                 }
-                onChange(fullText.trim());
             };
 
             reader.onerror = () => {
                 setParseError('Failed to read the file.');
-            };
-
-            reader.onloadend = () => {
                 setIsParsing(false);
-                 if (fileInputRef.current) {
+                if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
             };
-            
+
             reader.readAsArrayBuffer(file);
 
         } catch (error) {
-            setParseError('Failed to parse PDF file. It might be corrupted or protected.');
-            console.error('PDF parsing error:', error);
+            setParseError('Failed to initialize PDF reader.');
+            console.error('PDF reader initialization error:', error);
             setIsParsing(false);
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -101,14 +109,14 @@ const ResumeInput: React.FC<{
                     placeholder="Paste your full master resume here, including all work experience and projects..."
                     rows={15}
                     disabled={disabled || isParsing}
-                    className="w-full bg-transparent focus:outline-none text-text-secondary placeholder-gray-500 disabled:opacity-50"
+                    className="w-full bg-transparent focus:outline-none text-text-secondary placeholder-text-secondary/50 disabled:opacity-50"
                 />
                 <div className="border-t border-base-300 mt-4 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <span className="text-sm text-text-secondary">The AI will select the most relevant projects for the job.</span>
                     <button
                         onClick={handleButtonClick}
                         disabled={disabled || isParsing}
-                        className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white font-semibold rounded-md hover:bg-brand-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white font-semibold rounded-md hover:bg-brand-primary/80 hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
                     >
                          {isParsing ? (
                             <>
@@ -127,7 +135,7 @@ const ResumeInput: React.FC<{
                     </button>
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" className="hidden" />
                 </div>
-                 {parseError && <p className="text-red-500 text-sm mt-2">{parseError}</p>}
+                 {parseError && <p className="text-red-500 text-sm mt-2 animate-shake">{parseError}</p>}
             </div>
         </div>
     );

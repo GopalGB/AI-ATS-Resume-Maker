@@ -73,7 +73,7 @@ const App: React.FC = () => {
 
         <main className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* --- Left Column: Inputs --- */}
-          <div className="bg-base-200/50 border border-base-300/50 rounded-2xl shadow-xl p-6 sm:p-8 space-y-6 animate-fade-in h-fit">
+          <div className="bg-base-200/50 border border-base-300/50 rounded-2xl shadow-xl p-6 sm:p-8 space-y-6 animate-slide-right hover:shadow-2xl hover:shadow-brand-primary/20 transition-all duration-300 h-fit">
             <ResumeInput 
               value={resumeText}
               onChange={setResumeText}
@@ -94,7 +94,7 @@ const App: React.FC = () => {
               <button
                 onClick={handleTailorResume}
                 disabled={isLoading || !resumeText.trim() || !jobDescriptionText.trim()}
-                className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold text-lg rounded-lg shadow-lg hover:shadow-brand-primary/40 hover:scale-105 transform transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
+                className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold text-lg rounded-lg shadow-lg hover:shadow-brand-primary/60 hover:shadow-2xl hover:scale-105 active:scale-95 transform transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-6 h-6 ${isLoading ? 'animate-spin' : ''}`}>
                     {isLoading ? (

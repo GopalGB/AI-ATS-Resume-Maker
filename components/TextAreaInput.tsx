@@ -24,7 +24,7 @@ const TextAreaInput: React.FC<TextAreaInputProps> = ({ id, label, value, onChang
         placeholder={placeholder}
         rows={rows}
         disabled={disabled}
-        className="p-4 bg-base-200 border border-base-300 rounded-lg shadow-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-shadow duration-200 text-text-secondary placeholder-gray-500 disabled:opacity-50"
+        className="p-4 bg-base-200 border border-base-300 rounded-lg shadow-sm focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-shadow duration-200 text-text-secondary placeholder-text-secondary/50 disabled:opacity-50 focus:outline-none"
       />
     </div>
   );

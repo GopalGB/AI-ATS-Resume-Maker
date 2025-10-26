@@ -13,7 +13,7 @@ const ScoreCircle: React.FC<ScoreCircleProps> = ({ score }) => {
   const scoreColor = score > 80 ? 'text-green-400' : score > 60 ? 'text-yellow-400' : 'text-red-400';
 
   return (
-    <div className="relative flex items-center justify-center w-40 h-40">
+    <div className="relative flex items-center justify-center w-40 h-40 animate-scale-in">
       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
         <circle
           className="text-base-300"
@@ -25,7 +25,7 @@ const ScoreCircle: React.FC<ScoreCircleProps> = ({ score }) => {
           cy="60"
         />
         <circle
-          className={`${scoreColor} transition-all duration-1000 ease-out`}
+          className={`${scoreColor}`}
           strokeWidth="10"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -35,7 +35,9 @@ const ScoreCircle: React.FC<ScoreCircleProps> = ({ score }) => {
           r={radius}
           cx="60"
           cy="60"
-          style={{ transition: 'stroke-dashoffset 1s ease-out' }}
+          style={{
+            transition: 'stroke-dashoffset 1s ease-out, color 0.3s ease'
+          }}
         />
       </svg>
       <span className={`absolute text-4xl font-bold ${scoreColor}`}>

@@ -23,7 +23,7 @@ const ProgressStep: React.FC<{
   title: string;
   status: 'pending' | 'loading' | 'done';
 }> = ({ title, status }) => {
-    
+
   const getIcon = () => {
     switch (status) {
       case 'loading': return <SpinnerIcon />;
@@ -33,13 +33,14 @@ const ProgressStep: React.FC<{
         return <PendingIcon />;
     }
   };
-  
+
   const textColor = status === 'pending' ? 'text-text-secondary' : 'text-text-primary';
+  const animationClass = status === 'loading' ? 'animate-pulse' : status === 'done' ? 'animate-bounce-in' : '';
 
   return (
-    <div className="flex items-center gap-3">
+    <div className={`flex items-center gap-3 transition-all duration-300 ${animationClass}`}>
         {getIcon()}
-        <span className={`font-medium ${textColor}`}>{title}</span>
+        <span className={`font-medium ${textColor} transition-colors duration-300`}>{title}</span>
     </div>
   );
 };
@@ -60,8 +61,11 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({ loadingStatus }) => {
     if (currentStepIndex === -1) currentStepIndex = 0; // Default to first step if status is generic
 
     return (
-        <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-3">
-            <h3 className="text-lg font-semibold text-text-primary mb-2">Optimization in Progress...</h3>
+        <div className="p-4 bg-base-100 border border-base-300 rounded-lg space-y-3 animate-slide-down">
+            <h3 className="text-lg font-semibold text-text-primary mb-2 flex items-center gap-2">
+                <span>Optimization in Progress</span>
+                <span className="animate-pulse">...</span>
+            </h3>
             {steps.map((step, index) => {
                 let status: 'pending' | 'loading' | 'done' = 'pending';
                 if (index < currentStepIndex) {
